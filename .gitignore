@@ -1,0 +1,4 @@
+.idea
+src/build/
+config.tf
+environment.tf
