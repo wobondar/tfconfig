@@ -4,6 +4,7 @@ import (
 	"golang.org/x/sys/unix"
 	"os"
 	"strings"
+	"fmt"
 )
 
 func ValidateFile(file string) (isExists bool, isWritable bool) {
@@ -37,9 +38,19 @@ func ValidateEnvironment(environment string) (err string, isValid bool) {
 	if len(environment) == 0 {
 		return "Environment name cant be empty", false
 	}
-	if strings.ContainsAny(environment, " -_") {
-		return "Environment name cant contain spaces, underscored and -", false
+	restrictedCharacters := " -_\\/~!@#$^&*)(=+`][;:'\"?><}{,."
+	if strings.ContainsAny(environment, restrictedCharacters) {
+		return fmt.Sprintf("Environment name cant contain characters:\t %s", restrictedCharacters), false
 	}
 
 	return "", true
+}
+
+func (a *App) ValidatePath() error {
+	a.log.ShowOpts("Path", a.projectPath)
+	if err, isValid := ValidatePath(a.projectPath); !isValid {
+		a.log.ErrorFWithUsage(err)
+	}
+
+	return nil
 }

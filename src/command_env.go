@@ -7,61 +7,73 @@ import (
 
 type EnvCommand struct {
 	app           *App
+	log           *Log
 	environment   string
 	modulesPath   string
 	modulesSource string
 }
 
 func ConfigureEnvCommand(a *App) {
-	c := &EnvCommand{app: a}
-	cmd := a.cli.Command("env", "Switch project environment").PreAction(c.validate).Action(c.run)
+	c := &EnvCommand{
+		app: a,
+		log: a.log,
+	}
+	cmd := a.cli.Command("env", "Switch Terraform project environment").PreAction(c.validate).Action(c.run)
 	cmd.Arg("environment", "Environment name").Required().Envar(TerraformEnvVar).StringVar(&c.environment)
 }
 
 func (c *EnvCommand) run(context *kingpin.ParseContext) error {
 	c.modulesSource = GetFullPath(c.modulesPath, "environment", c.environment, ConfigModuleName)
-	ShowInfo("Module source will be: '%s'", c.modulesSource)
+	c.log.Info("Module source will be: '%s'", c.modulesSource)
 
-	AskConfirmOrSkip(c.app.isCi)
+	c.app.AskConfirmOrSkip(c.app.isCi)
 
 	if isCreated := c.createOrPopulateEnvironment(c.app.projectPath); isCreated {
-		ShowInfo("Environment successfully switched: %s", c.environment)
+		c.log.Info("Environment successfully switched: %s", c.environment)
 	} else {
-		ShowError("I don't know what exactly should be happen to cause that error ¯\\_(ツ)_/¯ ")
+		c.log.ErrorF("I don't really know what exactly should be happen to cause that error ¯\\_(ツ)_/¯ ")
 	}
 
 	return nil
 }
 
 func (c *EnvCommand) validate(context *kingpin.ParseContext) error {
+	c.app.ValidatePath()
+
+	configFilePath := GetFullPath(c.app.projectPath, ConfigFile)
+
+	c.log.ShowOpts("Config", configFilePath)
+	if isExists, _ := ValidateFile(configFilePath); !isExists {
+		c.log.ErrorFWithUsage("Configuration file '%s' does'nt exists", ConfigFile)
+	}
 
 	environmentConfig := GetFullPath(c.app.projectPath, EnvironmentFile)
-	ShowOpts("Environment", environmentConfig)
+	c.log.ShowOpts("Environment", environmentConfig)
 
 	if err, isValid := ValidateEnvironment(c.environment); !isValid {
-		c.app.ShowErrorWithUsage(err)
+		c.log.ErrorFWithUsage(err)
 	}
 
 	if isExists, isWritable := ValidateFile(environmentConfig); isExists && isWritable {
-		ShowWarning("Environment file '%s' exists and will be overridden", EnvironmentFile)
+		c.log.Warning("Environment file '%s' exists and will be overridden", EnvironmentFile)
 	} else if isExists && !isWritable {
-		ShowError("Environment file '%s' exists, but dont have write permissions", EnvironmentFile)
+		c.log.ErrorF("Environment file '%s' exists, but dont have write permissions", EnvironmentFile)
 	} else {
-		ShowInfo("Environment file '%s' does'nt exists and will be created", EnvironmentFile)
+		c.log.Info("Environment file '%s' does'nt exists and will be created", EnvironmentFile)
 	}
 
-	modulesPath, isFoundModules := findModules(c.app.projectPath)
+	modulesPath, isFoundModules := c.findModules(c.app.projectPath)
 	if !isFoundModules {
-		ShowError("Cant find '%s' dir", ModulesFolder)
+		c.log.ErrorF("Cant find '%s' dir", ModulesFolder)
 	}
 
 	c.modulesPath = modulesPath
 	return nil
 }
 
-func findModules(path string) (modulesPath string, isFound bool) {
+func (c *EnvCommand) findModules(path string) (modulesPath string, isFound bool) {
 	for _, v := range listSearchPaths() {
-		if FindFolder(GetFullPath(path, v), ModulesFolder) {
+		if c.app.FindFolder(GetFullPath(path, v), ModulesFolder) {
 			return v + ModulesFolder, true
 		}
 	}
@@ -72,11 +84,11 @@ func (c *EnvCommand) createOrPopulateEnvironment(projectPath string) (isCreated 
 	filePath := GetFullPath(projectPath, EnvironmentFile)
 	if isExists, _ := ValidateFile(filePath); isExists {
 		// already exists, replace
-		ReplaceFile(filePath, c.generateEnvironmentConfigSource())
+		c.app.ReplaceFile(filePath, c.generateEnvironmentConfigSource())
 		return true
 	} else {
 		// does'nt exits, create
-		CreateFile(filePath, c.generateEnvironmentConfigSource())
+		c.app.CreateFile(filePath, c.generateEnvironmentConfigSource())
 		return true
 	}
 	return false

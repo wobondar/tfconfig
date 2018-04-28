@@ -11,6 +11,7 @@ type App struct {
 	cli         *kingpin.Application
 	args        []string
 	pwd         string
+	log         *Log
 	isCi        bool
 	projectPath string
 }
@@ -22,38 +23,35 @@ func Init() (a *App) {
 		pwd:  pwd,
 	}
 
+	a.log = a.Logger()
+
+	a.cli.UsageWriter(a.log.ioWriter).ErrorWriter(a.log.ioWriter)
+
 	a.cli.Version(Version)
 	a.cli.HelpFlag.Short('h')
 	a.cli.VersionFlag.Short('v')
 
-	a.cli.Flag("ci", "CI flag, default 'false', if 'true' that you will not be asked before changes").Default("false").Short('c').Bool()
-	a.cli.GetFlag("ci").Envar(CiEnvVar).BoolVar(&a.isCi)
+	a.cli.Flag("ci", "CI flag, default 'false', if 'true' that you will not be asked before changes").
+		Default("false").
+		Short('c').
+		Envar(CiEnvVar).
+		BoolVar(&a.isCi)
 
-	a.cli.Flag("path", "Terraform project path").PlaceHolder("PATH").Short('p').Default(a.pwd).String()
-	a.cli.GetFlag("path").StringVar(&a.projectPath)
+	a.cli.Flag("path", "Terraform project path").
+		Default(a.pwd).
+		Short('p').
+		PlaceHolder("PATH").
+		StringVar(&a.projectPath)
 
-	a.cli.PreAction(a.validate)
+	a.cli.Flag("verbose", "Verbose mode, default 'false'").
+		Default("false").
+		Short('V').
+		BoolVar(&a.log.verbose)
 
 	ConfigureEnvCommand(a)
+	ConfigureDotEnvCommand(a)
 
 	kingpin.MustParse(a.cli.Parse(a.args))
 
 	return a
-}
-
-func (a *App) validate(context *kingpin.ParseContext) error {
-	configFilePath := GetFullPath(a.projectPath, ConfigFile)
-
-	ShowOpts("Path", a.projectPath)
-	ShowOpts("Config", configFilePath)
-
-	if err, isValid := ValidatePath(a.projectPath); !isValid {
-		a.ShowErrorWithUsage(err)
-	}
-
-	if isExists, _ := ValidateFile(configFilePath); !isExists {
-		a.ShowErrorWithUsage("Configuration file '%s' does'nt exists", ConfigFile)
-	}
-
-	return nil
 }
