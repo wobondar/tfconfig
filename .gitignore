@@ -2,3 +2,4 @@
 src/build/
 config.tf
 environment.tf
+.env
