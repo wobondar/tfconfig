@@ -22,6 +22,8 @@ do
     fi
 done
 
+cd build
+
 for platform in "${platforms[@]}"
 do
     platform_split=(${platform//\// })
@@ -29,12 +31,11 @@ do
     GOARCH=${platform_split[1]}
     input_name=tfconfig'_'$1'_'$GOOS'_'$GOARCH
     output_name=tfconfig
-    mv ./build/$input_name ./build/$output_name
-    zip ./build/$input_name.zip ./build/$output_name
-    mv ./build/$output_name ./build/$input_name
+    mv ./$input_name ./$output_name
+    zip ./$input_name.zip ./$output_name
+    mv ./$output_name ./$input_name
 done
 
-cd build
 shasum -a 256 *.zip > 'tfconfig_'$1'_SHA256SUMS'
 shasum -a 256 -c 'tfconfig_'$1'_SHA256SUMS'
 cd ..
