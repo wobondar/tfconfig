@@ -38,6 +38,19 @@ func (a *App) AskConfirmOrSkip(trigger bool) {
 	}
 }
 
+func (a *App) createOrPopulateFile(filePath string, content string) (isCreated bool) {
+	if isExists, _ := ValidateFile(filePath); isExists {
+		// already exists, replace
+		a.ReplaceFile(filePath, content)
+		return true
+	} else {
+		// does'nt exits, create
+		a.CreateFile(filePath, content)
+		return true
+	}
+	return false
+}
+
 func (a *App) CreateFile(filePath string, content string) {
 	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
 	if a.isError(err) {

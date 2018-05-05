@@ -23,7 +23,7 @@ func ConfigureEnvCommand(a *App) {
 }
 
 func (c *EnvCommand) run(context *kingpin.ParseContext) error {
-	c.modulesSource = GetFullPath(c.modulesPath, "environment", c.environment, ConfigModuleName)
+	c.modulesSource = GetFullPath(c.modulesPath, EnvironmentsDir, c.environment, ConfigModuleName)
 	c.log.Info("Module source will be: '%s'", c.modulesSource)
 
 	c.app.AskConfirmOrSkip(c.app.isCi)
@@ -64,7 +64,7 @@ func (c *EnvCommand) validate(context *kingpin.ParseContext) error {
 
 	modulesPath, isFoundModules := c.findModules(c.app.projectPath)
 	if !isFoundModules {
-		c.log.ErrorF("Cant find '%s' dir", ModulesFolder)
+		c.log.ErrorF("Cant find '%s' dir", ModulesDir)
 	}
 
 	c.modulesPath = modulesPath
@@ -73,8 +73,8 @@ func (c *EnvCommand) validate(context *kingpin.ParseContext) error {
 
 func (c *EnvCommand) findModules(path string) (modulesPath string, isFound bool) {
 	for _, v := range listSearchPaths() {
-		if c.app.FindFolder(GetFullPath(path, v), ModulesFolder) {
-			return v + ModulesFolder, true
+		if c.app.FindFolder(GetFullPath(path, v), ModulesDir) {
+			return v + ModulesDir, true
 		}
 	}
 	return "", false

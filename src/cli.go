@@ -50,6 +50,7 @@ func Init() (a *App) {
 
 	ConfigureEnvCommand(a)
 	ConfigureDotEnvCommand(a)
+	ConfigureBackendCommand(a)
 
 	kingpin.MustParse(a.cli.Parse(a.args))
 
