@@ -5,6 +5,7 @@ import (
 	"github.com/joho/godotenv"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"path/filepath"
+	"strings"
 	"text/template"
 )
 
@@ -12,7 +13,7 @@ const (
 	// Template for generate backend config
 	backendTemplate = `bucket = "{{.TerraformStateBucket}}"
 
-key = "{{.Environment}}/{{.TerraformStateKey}}/terraform.tfstate"
+key = "{{.Environment}}/{{.Environment}}-{{.Domain}}-{{.TerraformStateKey}}/terraform.tfstate"
 
 region = "{{.Region}}"
 
@@ -28,11 +29,15 @@ kms_key_id = "{{.KmsKeyArn}}"
 	defaultEnvironmentConfig = "environment.env"
 	// Project specific configuration
 	defaultProjectConfig = "terraform.env"
+
+	// Terraform configurations invoker suffix
+	defaultTerraformInvokerSuffix = "invoker"
 )
 
 type BackendConfig struct {
 	Environment          string
 	Region               string
+	Domain               string
 	TerraformStateBucket string
 	TerraformStateKey    string
 	TerraformLockTable   string
@@ -48,6 +53,7 @@ type BackendCommand struct {
 	app                   *App
 	log                   *Log
 	environment           string
+	invokerEnabled        bool
 	modulesPath           string
 	environmentConfigPath string
 	projectConfigPath     string
@@ -77,6 +83,11 @@ func ConfigureBackendCommand(a *App) {
 	cmd.Flag("project-config", "Project specific config path").
 		Default(defaultProjectConfig).
 		StringVar(&c.projectConfigPath)
+
+	cmd.Flag("invoker", "Generate backend config for cloud configuration applying").
+		Default("false").
+		Short('i').
+		BoolVar(&c.invokerEnabled)
 }
 
 func (c *BackendCommand) run(context *kingpin.ParseContext) error {
@@ -85,7 +96,9 @@ func (c *BackendCommand) run(context *kingpin.ParseContext) error {
 		project:     c.readDotEnv(c.projectConfigPath),
 	}
 
-	c.backendConfig = c.handleDotEnv(&c.dotEnvConfig)
+	c.backendConfig = c.dotEnvMapper(&c.dotEnvConfig)
+
+	c.applyInvoker(c.backendConfig)
 
 	c.app.AskConfirmOrSkip(c.app.isCi)
 
@@ -142,7 +155,14 @@ func (c *BackendCommand) validate(context *kingpin.ParseContext) error {
 	return nil
 }
 
-func (c *BackendCommand) handleDotEnv(env *dotEnv) *BackendConfig {
+func (c *BackendCommand) applyInvoker(config *BackendConfig) {
+	if c.invokerEnabled {
+		c.log.ShowOpts("Invoker", "enabled")
+		config.TerraformStateKey = strings.Join([]string{config.TerraformStateKey, defaultTerraformInvokerSuffix}, "-")
+	}
+}
+
+func (c *BackendCommand) dotEnvMapper(env *dotEnv) *BackendConfig {
 	return &BackendConfig{
 		Environment:          c.environment,
 		Region:               env.environment["REGION"],
@@ -150,6 +170,7 @@ func (c *BackendCommand) handleDotEnv(env *dotEnv) *BackendConfig {
 		TerraformLockTable:   env.environment["TERRAFORM_LOCK_TABLE"],
 		KmsKeyArn:            env.environment["KMS_KEY_ARN"],
 		TerraformStateKey:    env.project["TERRAFORM_STATE_KEY"],
+		Domain:               env.project["DOMAIN"],
 	}
 }
 
