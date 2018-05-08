@@ -13,6 +13,7 @@ type Log struct {
 	args     []string
 	ioWriter io.Writer
 	verbose  bool
+	silent   bool
 	isQuite  bool
 }
 
@@ -21,8 +22,15 @@ func (a *App) Logger() *Log {
 		cli:      a.cli,
 		args:     a.args,
 		verbose:  false,
+		silent:   false,
 		isQuite:  false,
 		ioWriter: os.Stdout,
+	}
+}
+
+func (l *Log) HandleSilent() {
+	if l.silent {
+		l.Quite()
 	}
 }
 

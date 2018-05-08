@@ -25,6 +25,8 @@ func Init() (a *App) {
 
 	a.log = a.Logger()
 
+	a.cli.PreAction(a.validate)
+
 	a.cli.UsageWriter(a.log.ioWriter).ErrorWriter(a.log.ioWriter)
 
 	a.cli.Version(Version)
@@ -43,7 +45,12 @@ func Init() (a *App) {
 		PlaceHolder("PATH").
 		StringVar(&a.projectPath)
 
-	a.cli.Flag("verbose", "Verbose mode, default 'false'").
+	a.cli.Flag("silent", "Silent mode (don't output anything), default 'false'").
+		Default("false").
+		Short('s').
+		BoolVar(&a.log.silent)
+
+	a.cli.Flag("verbose", "Verbose mode, will overrides 'silent mode', default 'false'").
 		Default("false").
 		Short('V').
 		BoolVar(&a.log.verbose)
@@ -55,4 +62,10 @@ func Init() (a *App) {
 	kingpin.MustParse(a.cli.Parse(a.args))
 
 	return a
+}
+
+func (a *App) validate(context *kingpin.ParseContext) error {
+	a.log.HandleSilent()
+
+	return nil
 }

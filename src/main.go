@@ -1,6 +1,6 @@
 package main
 
-const Version = "v0.2.0"
+const Version = "v0.2.1"
 
 const CiEnvVar = "CI"
 const TerraformEnvVar = "TF_ENV"
