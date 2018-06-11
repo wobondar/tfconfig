@@ -176,10 +176,9 @@ func (c *DotEnvCommand) printEnvVars() {
 
 func (c *DotEnvCommand) printExportEnvVars() {
 	for k, v := range c.dotEnvMap {
-		c.log.Printf("export %s=%s\n", k, v)
+		c.log.Printf("export %s=\"%s\"\n", k, v)
 	}
 }
-
 
 func (c *DotEnvCommand) processDotEnv() error {
 	var ssmVars []ssmVar
