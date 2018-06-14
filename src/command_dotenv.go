@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ssm"
@@ -212,7 +211,7 @@ func (c *DotEnvCommand) processDotEnv() error {
 			j = len(names)
 		}
 
-		values, err := c.getParameters(names[i:j], c.decrypt)
+		values, err := c.getParameters(names[i:j], c.decrypt, ssmVars[i:j])
 		if err != nil {
 			return err
 		}
@@ -228,7 +227,7 @@ func (c *DotEnvCommand) processDotEnv() error {
 	return nil
 }
 
-func (c *DotEnvCommand) getParameters(names []string, decrypt bool) (map[string]string, error) {
+func (c *DotEnvCommand) getParameters(names []string, decrypt bool, ssmVars []ssmVar) (map[string]string, error) {
 	values := make(map[string]string)
 
 	input := &ssm.GetParametersInput{
@@ -242,35 +241,21 @@ func (c *DotEnvCommand) getParameters(names []string, decrypt bool) (map[string]
 	resp, err := c.ssm.GetParameters(input)
 	c.log.must(err)
 
-	if len(resp.InvalidParameters) > 0 {
-		return values, newInvalidParametersError(resp)
-	}
-
-	for _, p := range resp.Parameters {
-		values[*p.Name] = *p.Value
+	for _, v := range ssmVars {
+		for _, p := range resp.Parameters {
+			if strings.EqualFold(v.parameter, *p.Name) {
+				values[v.parameter] = *p.Value
+			}
+		}
+		for _, p := range resp.InvalidParameters {
+			if strings.EqualFold(v.parameter, *p) {
+				values[v.parameter] = "VALUE_NOT_EXISTS"
+				c.log.Warning("Value for parameter: %s not exists in AWS Parameter Store. Environment variable: %s", v.parameter, v.envVar)
+			}
+		}
 	}
 
 	return values, nil
-}
-
-type invalidParametersError struct {
-	InvalidParameters []string
-}
-
-func newInvalidParametersError(resp *ssm.GetParametersOutput) *invalidParametersError {
-	e := new(invalidParametersError)
-	for _, p := range resp.InvalidParameters {
-		if p == nil {
-			continue
-		}
-
-		e.InvalidParameters = append(e.InvalidParameters, *p)
-	}
-	return e
-}
-
-func (e *invalidParametersError) Error() string {
-	return fmt.Sprintf("invalid parameters: %v", e.InvalidParameters)
 }
 
 func (c *DotEnvCommand) parameter(k, v string) (*string, error) {
