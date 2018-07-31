@@ -1,8 +1,9 @@
 package main
 
-const Version = "v0.3.2"
+const Version = "v0.3.3"
 
 const CiEnvVar = "CI"
+const TerraformLocalEnvVar = "TF_LOCAL"
 const TerraformEnvVar = "TF_ENV"
 const ModulesDir = "aws-terraform-modules"
 const ConfigFile = "config.tf"

@@ -92,6 +92,7 @@ func ConfigureEnvCommand(a *App) {
 	cmd.Flag("local", "Generate environment.tf with AWS_PROFILE for local running").
 		Default("false").
 		Short('l').
+		Envar(TerraformLocalEnvVar).
 		BoolVar(&c.local)
 }
 
