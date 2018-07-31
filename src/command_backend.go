@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"github.com/joho/godotenv"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"path/filepath"
 	"strings"
@@ -92,8 +91,8 @@ func ConfigureBackendCommand(a *App) {
 
 func (c *BackendCommand) run(context *kingpin.ParseContext) error {
 	c.dotEnvConfig = dotEnv{
-		environment: c.readDotEnv(c.environmentConfigPath),
-		project:     c.readDotEnv(c.projectConfigPath),
+		environment: c.app.ReadDotEnv(c.environmentConfigPath),
+		project:     c.app.ReadDotEnv(c.projectConfigPath),
 	}
 
 	c.backendConfig = c.dotEnvMapper(&c.dotEnvConfig)
@@ -113,7 +112,7 @@ func (c *BackendCommand) run(context *kingpin.ParseContext) error {
 
 func (c *BackendCommand) validate(context *kingpin.ParseContext) error {
 
-	c.template = c.parseTemplate(backendTemplate)
+	c.template = c.app.ParseTemplate(backendTemplate)
 
 	c.app.ValidatePath()
 
@@ -122,7 +121,7 @@ func (c *BackendCommand) validate(context *kingpin.ParseContext) error {
 		c.log.ErrorFWithUsage(err)
 	}
 
-	modulesAbsPath, isFoundModules := c.findModules(c.app.projectPath)
+	modulesAbsPath, isFoundModules := c.app.findModules(c.app.projectPath)
 	if !isFoundModules {
 		c.log.ErrorF("Cant find '%s' dir", ModulesDir)
 	}
@@ -184,26 +183,4 @@ func (c *BackendCommand) executeTemplate(t *template.Template, config *BackendCo
 	}
 
 	return ""
-}
-
-func (c *BackendCommand) parseTemplate(templateText string) *template.Template {
-	t, err := template.New("template").Funcs(template.FuncMap{}).Parse(templateText)
-	c.log.must(err)
-	return t
-}
-
-func (c *BackendCommand) readDotEnv(dotEnvFile string) map[string]string {
-	e, err := godotenv.Read(dotEnvFile)
-	c.log.must(err)
-	return e
-}
-
-func (c *BackendCommand) findModules(path string) (modulesPath string, isFound bool) {
-	for _, v := range listSearchPaths() {
-		searchPath, _ := filepath.Abs(filepath.Join(path, v))
-		if c.app.FindFolder(searchPath, ModulesDir) {
-			return filepath.Join(searchPath, ModulesDir), true
-		}
-	}
-	return "", false
 }

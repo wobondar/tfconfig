@@ -2,8 +2,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/joho/godotenv"
 	"os"
+	"path/filepath"
 	"strings"
+	"text/template"
 )
 
 const pathSeparator = "/"
@@ -113,4 +116,37 @@ func (a *App) isError(err error) bool {
 	}
 
 	return err != nil
+}
+
+func (a *App) BoolResolver(text string) bool {
+	if strings.EqualFold(text, "true") || strings.EqualFold(text, "1") {
+		return true
+	}
+	return false
+}
+
+func (a *App) ReadDotEnv(dotEnvFile string) map[string]string {
+	e, err := godotenv.Read(dotEnvFile)
+	a.log.must(err)
+	return e
+}
+
+func (a *App) ParseTemplate(templateText string) *template.Template {
+	t, err := template.New("template").Funcs(template.FuncMap{}).Parse(templateText)
+	a.log.must(err)
+	return t
+}
+
+func (a *App) findModules(path string) (modulesPath string, isFound bool) {
+	for _, v := range listSearchPaths() {
+		searchPath, _ := filepath.Abs(filepath.Join(path, v))
+		if a.FindFolder(searchPath, ModulesDir) {
+			return filepath.Join(searchPath, ModulesDir), true
+		}
+	}
+	return "", false
+}
+
+func listSearchPaths() (paths []string) {
+	return []string{"./", "../", "../../", "../../../", "../../../../"}
 }
