@@ -24,11 +24,6 @@ kms_key_id = "{{.KmsKeyArn}}"
 	// Default Terraform config file name which cant be overridden
 	defaultTerraformBackendConfig = "terraform-backend.tfconf"
 
-	// Global configuration that includes environment (dev, staging) configuration stored there
-	defaultEnvironmentConfig = "environment.env"
-	// Project specific configuration
-	defaultProjectConfig = "terraform.env"
-
 	// Terraform configurations invoker suffix
 	defaultTerraformInvokerSuffix = "invoker"
 )
@@ -133,12 +128,12 @@ func (c *BackendCommand) validate(context *kingpin.ParseContext) error {
 		c.log.ErrorF("Environment config '%s' not exists", defaultEnvironmentConfig)
 	}
 
-	projectConfigPath, _ := filepath.Abs(c.projectConfigPath)
-	c.log.ShowOpts("Project config path", projectConfigPath)
-	if isExists, _ := ValidateFile(projectConfigPath); !isExists {
-		c.log.ErrorF("Project config '%s' not exists", filepath.Base(projectConfigPath))
+	projectConfigPath, isFound := c.app.projectEnvironmentConfigResolver(defaultProjectConfig)
+	if !isFound {
+		c.log.ErrorF("Project config '%s' not exists", projectConfigPath)
 	}
 	c.projectConfigPath = projectConfigPath
+	c.log.ShowOpts("Project environment config", c.projectConfigPath)
 
 	backendConfigPath, _ := filepath.Abs(c.backendConfigPath)
 	c.log.ShowOpts("Backend config path", backendConfigPath)

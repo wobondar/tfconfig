@@ -125,6 +125,19 @@ func (a *App) BoolResolver(text string) bool {
 	return false
 }
 
+func (a *App) projectEnvironmentConfigResolver(fileName string) (projectEnvironmentConfig string, isFound bool) {
+	sourceEnvironmentProjectConfigPath, _ := filepath.Abs(fileName)
+	rootEnvironmentProjectConfigPath, _ := filepath.Abs(strings.Join([]string{"..", fileName}, pathSeparator))
+
+	if isExists, _ := ValidateFile(sourceEnvironmentProjectConfigPath); isExists {
+		return sourceEnvironmentProjectConfigPath, true
+	} else if isExists, _ := ValidateFile(rootEnvironmentProjectConfigPath); isExists {
+		return rootEnvironmentProjectConfigPath, true
+	}
+
+	return "", false
+}
+
 func (a *App) ReadDotEnv(dotEnvFile string) map[string]string {
 	e, err := godotenv.Read(dotEnvFile)
 	a.log.must(err)

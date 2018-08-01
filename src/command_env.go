@@ -2,10 +2,8 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"path/filepath"
-	"strings"
 	"text/template"
 )
 
@@ -152,25 +150,12 @@ func (c *EnvCommand) validate(context *kingpin.ParseContext) error {
 		c.log.ErrorF("Environment config '%s' not exists", defaultEnvironmentConfig)
 	}
 
-	// Leave for the backward capability
-	sourceProjectConfigPath, _ := filepath.Abs(defaultProjectConfig)
-	sourceProjectConfigPathExists, _ := ValidateFile(sourceProjectConfigPath)
-
-	// TODO refactor this piece of shit
-	rootProjectConfigPath, _ := filepath.Abs(strings.Join([]string{"..", defaultProjectConfig}, pathSeparator))
-	rootProjectConfigPathExists, _ := ValidateFile(rootProjectConfigPath)
-
-	if sourceProjectConfigPathExists {
-		c.projectConfigPath = sourceProjectConfigPath
-		c.log.Info("Source project config '%s' will be used", filepath.Base(sourceProjectConfigPath))
-	} else if rootProjectConfigPathExists {
-		c.projectConfigPath = rootProjectConfigPath
-		c.log.Info("Project root config '%s' will be used", filepath.Base(rootProjectConfigPath))
-	} else {
-		c.log.ErrorF("Project config '%s' not exists", defaultProjectConfig)
+	projectConfigPath, isFound := c.app.projectEnvironmentConfigResolver(defaultProjectConfig)
+	if !isFound {
+		c.log.ErrorF("Project config '%s' not exists", projectConfigPath)
 	}
-
-	c.log.ShowOpts("Project config path", c.projectConfigPath)
+	c.projectConfigPath = projectConfigPath
+	c.log.ShowOpts("Project environment config", c.projectConfigPath)
 
 	if isExists, isWritable := ValidateFile(environmentConfig); isExists && isWritable {
 		c.log.Warning("Environment file '%s' exists and will be overridden", EnvironmentFile)
@@ -198,28 +183,6 @@ func (c *EnvCommand) findModules(path string) (modulesPath string, isFound bool)
 		}
 	}
 	return "", false
-}
-
-// TODO remove that
-func (c *EnvCommand) createOrPopulateEnvironment(projectPath string) (isCreated bool) {
-	filePath := GetFullPath(projectPath, EnvironmentFile)
-	if isExists, _ := ValidateFile(filePath); isExists {
-		// already exists, replace
-		c.app.ReplaceFile(filePath, c.generateEnvironmentConfigSource())
-		return true
-	} else {
-		// does'nt exits, create
-		c.app.CreateFile(filePath, c.generateEnvironmentConfigSource())
-		return true
-	}
-	return false
-}
-
-// TODO remove that shits
-func (c *EnvCommand) generateEnvironmentConfigSource() string {
-	return WarningHeader +
-		fmt.Sprintf("module \"%s\" {\n", ConfigModuleName) +
-		fmt.Sprintf("  source = \"%s\"\n}\n\n", c.modulesSource)
 }
 
 func (c *EnvCommand) executeTemplate(t *template.Template, config *ProjectConfig) string {
