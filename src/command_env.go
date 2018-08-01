@@ -27,7 +27,8 @@ locals {
 
 terraform {
   backend "s3" {
-    encrypt = true
+    encrypt = true{{ if .Local }}
+    profile = "{{.AwsProfile}}"{{ end }}
   }
 }
 
