@@ -97,7 +97,14 @@ func ConfigureDotEnvCommand(a *App) {
 }
 
 func (c *DotEnvCommand) initSsmClient() {
-	awsSession, err := session.NewSession()
+	awsConfig := &aws.Config{
+		LogLevel: aws.LogLevel(aws.LogOff),
+	}
+
+	if c.log.awsDebug {
+		awsConfig.LogLevel = aws.LogLevel(aws.LogDebugWithHTTPBody)
+	}
+	awsSession, err := session.NewSession(awsConfig)
 	c.log.must(err)
 	c.ssm = ssm.New(awsSession)
 }
@@ -193,6 +200,8 @@ func (c *DotEnvCommand) processDotEnv() error {
 		}
 	}
 
+	c.log.Debug("uniqNames = %v", len(uniqNames))
+
 	if len(uniqNames) == 0 {
 		// Nothing to do, no SSM parameters.
 		return nil
@@ -205,13 +214,18 @@ func (c *DotEnvCommand) processDotEnv() error {
 		i++
 	}
 
+	c.log.Debug("names = %v", len(names))
+
 	for i := 0; i < len(names); i += c.batchSize {
 		j := i + c.batchSize
 		if j > len(names) {
 			j = len(names)
 		}
 
-		values, err := c.getParameters(names[i:j], c.decrypt, ssmVars[i:j])
+		c.log.Debug("Batch [%v-%v], names: %v, ssmVars: %v", i, j, len(names[i:j]), len(ssmVars[i:j]))
+
+		values, err := c.getParameters(names[i:j], c.decrypt, ssmVars)
+		c.log.Debug("Batch [%v-%v], values: %v", i, j, len(values))
 		if err != nil {
 			return err
 		}
@@ -238,7 +252,11 @@ func (c *DotEnvCommand) getParameters(names []string, decrypt bool, ssmVars []ss
 		input.Names = append(input.Names, aws.String(n))
 	}
 
+	c.log.Debug("REQ: Batch [%v], input.Name: %v", len(ssmVars), len(input.Names))
+
 	resp, err := c.ssm.GetParameters(input)
+	c.log.Debug("RESP: Batch [%v], resp.Parameters: %v", len(ssmVars), len(resp.Parameters))
+
 	c.log.must(err)
 
 	for _, v := range ssmVars {

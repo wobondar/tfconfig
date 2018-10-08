@@ -15,6 +15,7 @@ type Log struct {
 	verbose  bool
 	silent   bool
 	isQuite  bool
+	awsDebug bool
 }
 
 func (a *App) Logger() *Log {
@@ -24,6 +25,7 @@ func (a *App) Logger() *Log {
 		verbose:  false,
 		silent:   false,
 		isQuite:  false,
+		awsDebug: false,
 		ioWriter: os.Stdout,
 	}
 }
@@ -32,6 +34,10 @@ func (l *Log) HandleSilent() {
 	if l.silent {
 		l.Quite()
 	}
+}
+
+func (l *Log) EnableAwsDebug() {
+	l.awsDebug = true
 }
 
 func (l *Log) Quite() {
@@ -48,6 +54,12 @@ func (l *Log) ErrorF(format string, s ...interface{}) {
 
 func (l *Log) Info(format string, s ...interface{}) {
 	showLog("INFO", fmt.Sprintf(format, s...), false, l.isQuite, l.ioWriter)
+}
+
+func (l *Log) Debug(format string, s ...interface{}) {
+	if l.verbose {
+		showLog("DEBUG", fmt.Sprintf(format, s...), false, l.isQuite, l.ioWriter)
+	}
 }
 
 func (l *Log) Warning(format string, s ...interface{}) {

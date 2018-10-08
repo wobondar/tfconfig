@@ -55,6 +55,11 @@ func Init() (a *App) {
 		Short('V').
 		BoolVar(&a.log.verbose)
 
+	a.cli.Flag("fuck", "lets say fuck off AWS").
+		Default("false").
+		Hidden().
+		BoolVar(&a.log.awsDebug)
+
 	ConfigureEnvCommand(a)
 	ConfigureDotEnvCommand(a)
 	ConfigureBackendCommand(a)
