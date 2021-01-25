@@ -40,6 +40,14 @@ provider "random" {
   version = "{{.RandomProviderVersion}}"
 }
 
+provider "template" {
+  version = "{{.TemplateProviderVersion}}"
+}
+
+provider "dns" {
+  version = "{{.DnsProviderVersion}}"
+}
+
 provider "aws" {
   region  = "${module.config.region}"
   version = "{{.AwsProviderVersion}}"{{ if .Local }}
@@ -50,17 +58,19 @@ provider "aws" {
 )
 
 type ProjectConfig struct {
-	ConfigModulePath      string
-	TfconfigVersion       string
-	MigrationPassed       bool
-	Local                 bool
-	ProjectName           string
-	ProjectDomain         string
-	GitRepo               string
-	AwsProfile            string
-	AwsProviderVersion    string
-	NullProviderVersion   string
-	RandomProviderVersion string
+	ConfigModulePath        string
+	TfconfigVersion         string
+	MigrationPassed         bool
+	Local                   bool
+	ProjectName             string
+	ProjectDomain           string
+	GitRepo                 string
+	AwsProfile              string
+	AwsProviderVersion      string
+	NullProviderVersion     string
+	RandomProviderVersion   string
+	TemplateProviderVersion string
+	DnsProviderVersion      string
 }
 
 type EnvironmentDotEnv struct {
@@ -210,16 +220,18 @@ func (c *EnvCommand) executeTemplate(t *template.Template, config *ProjectConfig
 
 func (c *EnvCommand) dotEnvMapper(env *EnvironmentDotEnv) *ProjectConfig {
 	return &ProjectConfig{
-		ConfigModulePath:      c.modulesSource,
-		TfconfigVersion:       Version,
-		MigrationPassed:       c.app.BoolResolver(env.project["MIGRATED"]),
-		Local:                 c.local,
-		ProjectName:           env.project["NAME"],
-		ProjectDomain:         env.project["DOMAIN"],
-		GitRepo:               env.project["GIT_REPO"],
-		AwsProfile:            env.environment["TERRAFORM_AWS_PROFILE"],
-		AwsProviderVersion:    env.environment["AWS_PROVIDER_VERSION"],
-		NullProviderVersion:   env.environment["NULL_PROVIDER_VERSION"],
-		RandomProviderVersion: env.environment["RANDOM_PROVIDER_VERSION"],
+		ConfigModulePath:        c.modulesSource,
+		TfconfigVersion:         Version,
+		MigrationPassed:         c.app.BoolResolver(env.project["MIGRATED"]),
+		Local:                   c.local,
+		ProjectName:             env.project["NAME"],
+		ProjectDomain:           env.project["DOMAIN"],
+		GitRepo:                 env.project["GIT_REPO"],
+		AwsProfile:              env.environment["TERRAFORM_AWS_PROFILE"],
+		AwsProviderVersion:      env.environment["AWS_PROVIDER_VERSION"],
+		NullProviderVersion:     env.environment["NULL_PROVIDER_VERSION"],
+		RandomProviderVersion:   env.environment["RANDOM_PROVIDER_VERSION"],
+		TemplateProviderVersion: env.environment["TEMPLATE_PROVIDER_VERSION"],
+		DnsProviderVersion:      env.environment["DNS_PROVIDER_VERSION"],
 	}
 }
