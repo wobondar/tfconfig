@@ -47,6 +47,7 @@ type BackendCommand struct {
 	app                   *App
 	log                   *Log
 	environment           string
+	modulesDir            string
 	invokerEnabled        bool
 	modulesPath           string
 	environmentConfigPath string
@@ -109,6 +110,12 @@ func (c *BackendCommand) validate(context *kingpin.ParseContext) error {
 
 	c.template = c.app.ParseTemplate(backendTemplate)
 
+	if c.app.isNewEnvVersion() {
+		c.modulesDir = ModulesDirV2
+	} else {
+		c.modulesDir = ModulesDir
+	}
+
 	c.app.ValidatePath()
 
 	c.log.ShowOpts("Environment", c.environment)
@@ -116,9 +123,9 @@ func (c *BackendCommand) validate(context *kingpin.ParseContext) error {
 		c.log.ErrorFWithUsage(err)
 	}
 
-	modulesAbsPath, isFoundModules := c.app.findModules(c.app.projectPath)
+	modulesAbsPath, isFoundModules := c.app.findModules(c.app.projectPath, c.modulesDir)
 	if !isFoundModules {
-		c.log.ErrorF("Cant find '%s' dir", ModulesDir)
+		c.log.ErrorF("Cant find '%s' dir", c.modulesDir)
 	}
 	c.modulesPath = modulesAbsPath
 

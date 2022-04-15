@@ -14,6 +14,7 @@ type App struct {
 	log         *Log
 	isCi        bool
 	projectPath string
+	envVersion  string
 }
 
 func Init() (a *App) {
@@ -38,6 +39,12 @@ func Init() (a *App) {
 		Short('c').
 		Envar(CiEnvVar).
 		BoolVar(&a.isCi)
+
+	a.cli.Flag("ev", "Terraform environment version (evolution version)").
+		Default(defaultEnvironmentVersion).
+		Short('E').
+		Envar(EnvVersionVar).
+		StringVar(&a.envVersion)
 
 	a.cli.Flag("path", "Terraform project path").
 		Default(a.pwd).

@@ -125,6 +125,14 @@ func (a *App) BoolResolver(text string) bool {
 	return false
 }
 
+func (a *App) isNewEnvVersion() bool {
+	if strings.EqualFold(a.envVersion, "2") {
+		return true
+	} else {
+		return false
+	}
+}
+
 func (a *App) projectEnvironmentConfigResolver(fileName string) (projectEnvironmentConfig string, isFound bool) {
 	sourceEnvironmentProjectConfigPath, _ := filepath.Abs(fileName)
 	rootEnvironmentProjectConfigPath, _ := filepath.Abs(strings.Join([]string{"..", fileName}, pathSeparator))
@@ -150,11 +158,11 @@ func (a *App) ParseTemplate(templateText string) *template.Template {
 	return t
 }
 
-func (a *App) findModules(path string) (modulesPath string, isFound bool) {
+func (a *App) findModules(path string, modulesDir string) (modulesPath string, isFound bool) {
 	for _, v := range listSearchPaths() {
 		searchPath, _ := filepath.Abs(filepath.Join(path, v))
-		if a.FindFolder(searchPath, ModulesDir) {
-			return filepath.Join(searchPath, ModulesDir), true
+		if a.FindFolder(searchPath, modulesDir) {
+			return filepath.Join(searchPath, modulesDir), true
 		}
 	}
 	return "", false
