@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-platforms=("linux/amd64" "darwin/amd64" "linux/386" "linux/arm")
+platforms=("linux/amd64" "darwin/amd64" "linux/386" "linux/arm" "linux/arm64" "darwin/arm64")
 mkdir -p ./build
 
 rm -r ./build/*
