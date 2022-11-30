@@ -1,5 +1,6 @@
 .idea
 src/build/
+src/build*/
 config.tf
 environment.tf
 .env

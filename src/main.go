@@ -1,6 +1,6 @@
 package main
 
-const Version = "v0.5.0"
+const Version = "v0.5.1"
 
 const CiEnvVar = "CI"
 const EnvVersionVar = "TF_ENV_VERSION"

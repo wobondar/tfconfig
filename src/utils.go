@@ -5,6 +5,7 @@ import (
 	"github.com/joho/godotenv"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"text/template"
 )
@@ -123,6 +124,14 @@ func (a *App) BoolResolver(text string) bool {
 		return true
 	}
 	return false
+}
+
+func (a *App) IntResolver(text string) int {
+	if strings.EqualFold(text, "") || strings.EqualFold(text, "1") {
+		return 1
+	}
+	intVar, _ := strconv.Atoi(text)
+	return intVar
 }
 
 func (a *App) isNewEnvVersion() bool {

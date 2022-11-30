@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"text/template"
 )
@@ -36,6 +37,7 @@ type BackendConfig struct {
 	TerraformStateKey    string
 	TerraformLockTable   string
 	KmsKeyArn            string
+	TerraformVersion     int
 }
 
 type dotEnv struct {
@@ -161,6 +163,10 @@ func (c *BackendCommand) applyInvoker(config *BackendConfig) {
 		c.log.ShowOpts("Invoker", "enabled")
 		config.TerraformStateKey = strings.Join([]string{config.TerraformStateKey, defaultTerraformInvokerSuffix}, "-")
 	}
+
+	if config.TerraformVersion >= 2 {
+		config.TerraformStateKey = config.TerraformStateKey + "/v" + strconv.Itoa(config.TerraformVersion)
+	}
 }
 
 func (c *BackendCommand) dotEnvMapper(env *dotEnv) *BackendConfig {
@@ -172,6 +178,7 @@ func (c *BackendCommand) dotEnvMapper(env *dotEnv) *BackendConfig {
 		KmsKeyArn:            env.environment["KMS_KEY_ARN"],
 		TerraformStateKey:    env.project["TERRAFORM_STATE_KEY"],
 		Domain:               env.project["DOMAIN"],
+		TerraformVersion:     c.app.IntResolver(env.project["TERRAFORM_VERSION"]),
 	}
 }
 
